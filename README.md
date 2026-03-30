@@ -14,17 +14,13 @@ Your job is to design the system first (UML), then implement the logic in Python
 
 ## What you will build
 
-## Smarter Scheduling
+## Testing PawPal+
 
-The PawPal+ system now includes advanced scheduling features for better pet care management:
+Run the test suite with: `python -m pytest`
 
-- **Task Sorting and Filtering**: Tasks can be sorted by due time and filtered by pet or completion status for easy viewing.
-- **Recurring Tasks**: Support for daily and weekly recurring tasks, with automatic generation of next instances when completed.
-- **Conflict Detection**: Lightweight detection of overlapping scheduled tasks, providing warnings to avoid double-booking.
-- **Intelligent Completion**: Marking a recurring task as complete automatically creates the next occurrence, keeping schedules up-to-date.
-- **Calendar Management**: A dedicated Calendar class handles time-based operations, ensuring efficient scheduling and conflict checks.
+The tests cover core behaviors including task completion, addition, sorting by time, recurring task auto-generation, and conflict detection. They verify happy paths (e.g., successful sorting) and edge cases (e.g., no tasks, overlapping schedules).
 
-These features make the app more robust and user-friendly, handling real-world pet care complexities without overwhelming the interface.
+**Confidence Level**: ⭐⭐⭐⭐ (4/5 stars) - The system handles basic scheduling reliably, but more edge cases (e.g., large pet/task counts) could be tested for production use.
 
 ## Getting started
 

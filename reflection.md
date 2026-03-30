@@ -83,12 +83,22 @@ This tradeoff is reasonable for pet care scheduling because simplicity and speed
 **a. What you tested**
 
 - What behaviors did you test?
+
+I tested core behaviors including task completion (marking tasks done), task addition to pets, sorting tasks by due time, automatic creation of next recurring task instances upon completion, and conflict detection for overlapping scheduled tasks.
+
 - Why were these tests important?
+
+These tests were important to verify that the fundamental scheduling logic works correctly, ensuring users can rely on the app for accurate pet care planning. They catch bugs early, prevent regressions during updates, and validate edge cases like sorting with missing times or handling recurring tasks, which are critical for a reliable pet scheduling system.
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
+
+I am highly confident (4/5) that the scheduler works correctly for typical use cases, as the tests cover key paths and edge cases, and manual runs in main.py confirm expected outputs.
+
 - What edge cases would you test next if you had more time?
+
+If I had more time, I would test edge cases like handling a large number of tasks (e.g., 50+ per pet) for performance, complex recurring patterns (e.g., bi-weekly or custom frequencies), time zone differences, tasks spanning midnight, and integration with the Streamlit UI for real-time updates.
 
 ---
 
