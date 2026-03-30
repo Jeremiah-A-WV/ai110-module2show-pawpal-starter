@@ -5,12 +5,43 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+![alt text](image.png)
+Owner holds the user's basic information and a list of their pets.
+
+Pet represents individual animals and owns a specific list of care tasks.
+
+Task is the data structure for the actual chores, storing constraints like duration, priority, and frequency.
+
+Scheduler aggregates all tasks from all pets and contains algorithms to sort them, detect overlaps, and generate the final daily plan.
+
 - What classes did you include, and what responsibilities did you assign to each?
+Task: Tracks properties like description, duration_mins, frequency, and is_completed.
+
+Pet: Holds the pet's profile and a list of their specific tasks.
+
+Scheduler: Acts as the brain storing multiple pets and defining placeholders for important logic like check_conflicts, get_upcoming_tasks, and generate_recurring_tasks.
+
+- Core actions:
+Add and edit profiles: A user needs to be able to enter basic information 
+about themselves and their pet, such as the pet's name, species, and age.
+
+Add and edit tasks: A user must be able to input specific care activities 
+(e.g., walking, feeding, grooming) and define their constraints, primarily the 
+task's duration in minutes and its priority level.
+
+Generate schedule: A user should be able to click a button to generate a daily 
+plan. The system will then automatically choose and order the tasks based on the 
+provided constraints and priorities, and display the resulting schedule clearly.
 
 **b. Design changes**
 
 - Did your design change during implementation?
+
+Yes, the design changed during implementation.
+
 - If yes, describe at least one change and why you made it.
+
+Initially, the skeleton had basic classes with empty methods and no explicit relationships between tasks and scheduled times. During implementation, I added a `pet_id` back-reference in `Task` and a `start_time` field to enable proper scheduling and querying. I also introduced a new `Calendar` class to centralize time management and conflict detection, as the original `Scheduler` lacked efficient data structures for handling overlaps. These changes were necessary to fix missing relationships (e.g., tasks not linked to pets beyond lists) and prevent logic bottlenecks (e.g., O(n) conflict checks becoming inefficient with many tasks), ensuring the system could scale and handle recurring tasks without manual workarounds.
 
 ---
 
