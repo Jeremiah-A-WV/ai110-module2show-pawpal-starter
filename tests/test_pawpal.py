@@ -83,23 +83,31 @@ def test_recurring_task_completion():
     assert new_task.due_time == task.next_occurrence(now), "New task should have next occurrence time"
 
 def test_conflict_detection():
-    """Verify Scheduler detects conflicts in scheduled tasks."""
+    """Verify Scheduler detects conflicts when tasks have overlapping start/end times."""
     owner = Owner(name="TestOwner")
     pet = Pet(id=1, name="Buddy", species="Dog", age=3)
     owner.add_pet(pet)
     
     now = datetime.now()
     task1 = Task(id=1, description="Task 1", duration_mins=60, priority="High", due_time=now.replace(hour=9, minute=0))
-    task2 = Task(id=2, description="Task 2", duration_mins=30, priority="Medium", due_time=now.replace(hour=9, minute=30))  # Overlaps
+    task2 = Task(id=2, description="Task 2", duration_mins=30, priority="Medium", due_time=now.replace(hour=9, minute=30))
     
     pet.add_task(task1)
     pet.add_task(task2)
     
     scheduler = Scheduler(owner)
-    schedule = scheduler.generate_daily_schedule(now.replace(hour=8, minute=0))
     
+    # Manually create overlapping scheduled tasks to test conflict detection
+    start_time1 = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    start_time2 = now.replace(hour=9, minute=30, second=0, microsecond=0)  # Overlaps with task1
+    
+    task1.start_time = start_time1
+    task2.start_time = start_time2
+    
+    scheduler.calendar.add_scheduled_task(task1)
+    scheduler.calendar.add_scheduled_task(task2)
+    
+    # Now detect conflicts
     conflicts = scheduler.detect_basic_conflicts()
     assert len(conflicts) > 0, "Conflicts should be detected for overlapping tasks"
-    # Assuming the schedule assigns overlapping times
-    found_conflict = any(t1.description in ["Task 1", "Task 2"] and t2.description in ["Task 1", "Task 2"] for t1, t2 in conflicts)
-    assert found_conflict, "Specific tasks should be in conflicts"
+    assert (task1, task2) in conflicts or (task2, task1) in conflicts, "Specific tasks should be in conflicts"

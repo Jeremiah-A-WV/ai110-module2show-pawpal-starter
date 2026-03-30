@@ -41,7 +41,7 @@ class Task:
 
     def next_occurrence(self, after: datetime) -> Optional[datetime]:
         """Returns the next occurrence of the task after the given time."""
-        if not self.is_recurring():
+        if not self.is_recurring() or not self.due_time:
             return self.due_time if self.due_time and self.due_time > after else None
         # Simple recurring logic
         if self.frequency == "Daily":
@@ -188,6 +188,8 @@ class Scheduler:
             self.calendar.add_scheduled_task(task)
             current_time += timedelta(minutes=task.duration_mins)
 
+        return schedule
+
     def get_tasks_sorted_by_time(self) -> List[Tuple[str, Task]]:
         """Returns all tasks sorted by due time."""
         all_tasks = self.get_all_tasks()
@@ -195,7 +197,10 @@ class Scheduler:
 
     def get_tasks_filtered_by_pet(self, pet_name: str) -> List[Task]:
         """Returns tasks for a specific pet."""
-        return [task for task in self.owner.get_all_tasks() if task.pet_id == next((p.id for p in self.owner.pets if p.name == pet_name), None)]
+        pet_id = next((p.id for p in self.owner.pets if p.name == pet_name), None)
+        if pet_id is None:
+            return []
+        return [task for task in self.owner.get_all_tasks() if task.pet_id == pet_id]
 
     def get_tasks_filtered_by_status(self, completed: bool) -> List[Tuple[str, Task]]:
         """Returns tasks filtered by completion status."""

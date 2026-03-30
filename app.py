@@ -8,33 +8,31 @@ st.title("🐾 PawPal+")
 
 st.markdown(
     """
-Welcome to the PawPal+ starter app.
+Welcome to **PawPal+**, a pet care planning assistant built with Python and Streamlit.
 
-This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-but **it does not implement the project logic**. Your job is to design the system and build it.
-
-Use this app as your interactive demo once your backend classes/functions exist.
+This app helps you organize and schedule care tasks for your pets with intelligent conflict detection, task sorting, and automatic recurring task management.
 """
 )
 
-with st.expander("Scenario", expanded=True):
+with st.expander("Features", expanded=False):
     st.markdown(
         """
-**PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
-for their pet(s) based on constraints like time, priority, and preferences.
-
-You will design and implement the scheduling logic and connect it to this Streamlit UI.
+- **Smart Scheduling**: Greedy algorithm that assigns tasks based on priority and time constraints
+- **Recurring Tasks**: Automatic next-occurrence generation for daily and weekly tasks
+- **Conflict Detection**: Real-time warnings for overlapping schedules
+- **Task Management**: Sort, filter, and complete tasks with automatic next-instance creation
+- **Interactive UI**: Manage owners, pets, tasks, and generate daily schedules
 """
     )
 
-with st.expander("What you need to build", expanded=True):
+with st.expander("How to Use", expanded=False):
     st.markdown(
         """
-At minimum, your system should:
-- Represent pet care tasks (what needs to happen, how long it takes, priority)
-- Represent the pet and the owner (basic info and preferences)
-- Build a plan/schedule for a day that chooses and orders tasks based on constraints
-- Explain the plan (why each task was chosen and when it happens)
+1. **Add an Owner** and update your name
+2. **Add Pets** with their basic information
+3. **Add Tasks** with duration, priority, and frequency (once/daily/weekly)
+4. **View Tasks** - sort by time or filter by status
+5. **Generate Schedule** - creates a daily plan with conflict warnings
 """
     )
 
@@ -121,6 +119,48 @@ if selected_pet:
     else:
         st.info("No tasks for this pet.")
 
+st.subheader("Task Management")
+if st.session_state.owner.pets:
+    selected_pet_for_tasks = st.selectbox("Select Pet for Tasks", [pet.name for pet in st.session_state.owner.pets], key="task_pet")
+    pet_for_tasks = next(p for p in st.session_state.owner.pets if p.name == selected_pet_for_tasks)
+    
+    if pet_for_tasks.tasks:
+        st.write("#### All Tasks for Selected Pet")
+        tasks_data = [{"Description": t.description, "Due Time": t.due_time.strftime('%H:%M') if t.due_time else 'None', "Priority": t.priority, "Completed": "Yes" if t.is_completed else "No"} for t in pet_for_tasks.tasks]
+        st.table(tasks_data)
+        
+        if st.button("Show Sorted Tasks by Time"):
+            scheduler = Scheduler(st.session_state.owner)
+            sorted_tasks = scheduler.get_tasks_sorted_by_time()
+            pet_sorted = [t for name, t in sorted_tasks if name == selected_pet_for_tasks]
+            if pet_sorted:
+                sorted_data = [{"Description": t.description, "Due Time": t.due_time.strftime('%H:%M') if t.due_time else 'None', "Priority": t.priority} for t in pet_sorted]
+                st.success("Tasks sorted by time:")
+                st.table(sorted_data)
+            else:
+                st.info("No tasks to sort.")
+        
+        status_filter = st.selectbox("Filter by Status", ["All", "Pending", "Completed"])
+        if st.button("Apply Filter"):
+            scheduler = Scheduler(st.session_state.owner)
+            if status_filter == "Pending":
+                filtered = scheduler.get_tasks_filtered_by_status(False)
+            elif status_filter == "Completed":
+                filtered = scheduler.get_tasks_filtered_by_status(True)
+            else:
+                filtered = scheduler.get_all_tasks()
+            pet_filtered = [t for name, t in filtered if name == selected_pet_for_tasks]
+            if pet_filtered:
+                filter_data = [{"Description": t.description, "Due Time": t.due_time.strftime('%H:%M') if t.due_time else 'None', "Priority": t.priority, "Completed": "Yes" if t.is_completed else "No"} for t in pet_filtered]
+                st.success(f"Filtered tasks ({status_filter}):")
+                st.table(filter_data)
+            else:
+                st.info("No tasks match the filter.")
+    else:
+        st.info("No tasks for this pet.")
+else:
+    st.info("Add pets first.")
+
 st.divider()
 
 st.subheader("Build Schedule")
@@ -134,10 +174,17 @@ if st.button("Generate Schedule"):
         start_time = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
         schedule = scheduler.generate_daily_schedule(start_time)
         
+        # Check for conflicts
+        conflicts = scheduler.detect_basic_conflicts()
+        if conflicts:
+            conflict_details = []
+            for t1, t2 in conflicts:
+                conflict_details.append(f"'{t1.description}' overlaps with '{t2.description}'")
+            st.warning("⚠️ Schedule Conflicts Detected: " + "; ".join(conflict_details) + ". Consider adjusting task times or priorities.")
+        
         if schedule:
             st.success("Schedule generated!")
-            for pet_name, task, start_time in schedule:
-                end_time = start_time + timedelta(minutes=task.duration_mins)
-                st.write(f"- {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}: {task.description} for {pet_name} (Priority: {task.priority})")
+            schedule_data = [{"Pet": pet_name, "Task": task.description, "Start Time": start_time.strftime('%H:%M'), "End Time": (start_time + timedelta(minutes=task.duration_mins)).strftime('%H:%M'), "Priority": task.priority} for pet_name, task, start_time in schedule]
+            st.table(schedule_data)
         else:
             st.info("No tasks to schedule for today.")
