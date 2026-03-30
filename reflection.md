@@ -55,7 +55,12 @@ Initially, the skeleton had basic classes with empty methods and no explicit rel
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+
+The scheduler uses a simple greedy algorithm that assigns tasks sequentially based on priority and due time, without backtracking to find optimal schedules. This may lead to suboptimal arrangements if higher-priority tasks could be swapped for better fits.
+
 - Why is that tradeoff reasonable for this scenario?
+
+This tradeoff is reasonable for pet care scheduling because simplicity and speed are prioritized over perfection. Pet owners typically have small numbers of tasks, so the greedy approach is fast and easy to understand, avoiding complex optimizations that could confuse users or slow down the app.
 
 ---
 

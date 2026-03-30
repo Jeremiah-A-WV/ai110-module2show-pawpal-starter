@@ -15,6 +15,22 @@ class Task:
     pet_id: Optional[int] = None  # Back-reference to pet
     start_time: Optional[datetime] = None  # Scheduled start time
 
+    def __lt__(self, other):
+        """Compares tasks by due_time for sorting."""
+        if not isinstance(other, Task):
+            return NotImplemented
+        self_time = self.due_time or datetime.max
+        other_time = other.due_time or datetime.max
+        return self_time < other_time
+
+    def __le__(self, other):
+        """Compares tasks by due_time for sorting."""
+        if not isinstance(other, Task):
+            return NotImplemented
+        self_time = self.due_time or datetime.max
+        other_time = other.due_time or datetime.max
+        return self_time <= other_time
+
     def mark_complete(self):
         """Marks the task as completed."""
         self.is_completed = True
@@ -27,11 +43,16 @@ class Task:
         """Returns the next occurrence of the task after the given time."""
         if not self.is_recurring():
             return self.due_time if self.due_time and self.due_time > after else None
-        # Simple recurring logic: assume daily for now
+        # Simple recurring logic
         if self.frequency == "Daily":
             next_time = self.due_time
             while next_time and next_time <= after:
                 next_time += timedelta(days=1)
+            return next_time
+        elif self.frequency == "Weekly":
+            next_time = self.due_time
+            while next_time and next_time <= after:
+                next_time += timedelta(weeks=1)
             return next_time
         return self.due_time
 
@@ -167,4 +188,67 @@ class Scheduler:
             self.calendar.add_scheduled_task(task)
             current_time += timedelta(minutes=task.duration_mins)
 
-        return schedule
+    def get_tasks_sorted_by_time(self) -> List[Tuple[str, Task]]:
+        """Returns all tasks sorted by due time."""
+        all_tasks = self.get_all_tasks()
+        return sorted(all_tasks, key=lambda x: x[1].due_time or datetime.max)
+
+    def get_tasks_filtered_by_pet(self, pet_name: str) -> List[Task]:
+        """Returns tasks for a specific pet."""
+        return [task for task in self.owner.get_all_tasks() if task.pet_id == next((p.id for p in self.owner.pets if p.name == pet_name), None)]
+
+    def get_tasks_filtered_by_status(self, completed: bool) -> List[Tuple[str, Task]]:
+        """Returns tasks filtered by completion status."""
+        return [(pet.name, task) for pet in self.owner.pets for task in pet.tasks if task.is_completed == completed]
+
+    def handle_recurring_tasks(self, start_date: datetime, end_date: datetime) -> List[Tuple[str, Task, datetime]]:
+        """Generates instances of recurring tasks within the date range."""
+        instances = []
+        for pet in self.owner.pets:
+            for task in pet.tasks:
+                if task.is_recurring():
+                    current = start_date
+                    while current <= end_date:
+                        next_occ = task.next_occurrence(current)
+                        if next_occ and start_date <= next_occ <= end_date:
+                            instances.append((pet.name, task, next_occ))
+                            current = next_occ + timedelta(days=1)  # Move to next day
+                        else:
+                            break
+        return instances
+
+    def detect_basic_conflicts(self) -> List[Tuple[Task, Task]]:
+        """Detects basic time conflicts between scheduled tasks."""
+        conflicts = []
+        scheduled = sorted(self.calendar.scheduled, key=lambda x: x[0])
+        for i in range(len(scheduled) - 1):
+            start1, task1 = scheduled[i]
+            start2, task2 = scheduled[i + 1]
+            end1 = start1 + timedelta(minutes=task1.duration_mins)
+            if end1 > start2:
+                conflicts.append((task1, task2))
+        return conflicts
+
+    def mark_task_complete(self, task_id: int):
+        """Marks a task as complete by ID, and creates a new instance if recurring."""
+        for pet in self.owner.pets:
+            for task in pet.tasks:
+                if task.id == task_id:
+                    task.mark_complete()
+                    if task.is_recurring():
+                        # Create new instance for next occurrence
+                        next_due = task.next_occurrence(datetime.now())
+                        if next_due:
+                            new_task = Task(
+                                id=self._task_id_counter,
+                                description=task.description,
+                                duration_mins=task.duration_mins,
+                                priority=task.priority,
+                                due_time=next_due,
+                                frequency=task.frequency,
+                                pet_id=task.pet_id
+                            )
+                            pet.add_task(new_task)
+                            self._task_id_counter += 1
+                    return True
+        return False  # Task not found
